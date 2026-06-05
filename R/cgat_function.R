@@ -1,88 +1,5 @@
-# Suppress NOTE about global variable used by cgat() and cgrplot()
+# Suppress NOTE about global variable used by cgrplot() and plot_cgr()
 utils::globalVariables(c("fasta_filtered"))
-
-#' Calculate CGR frequency matrix for a DNA sequence
-#'
-#' This function computes the Chaos Game Representation (CGR) frequency matrix
-#' for a given DNA sequence at a specified k-mer length. The CGR approach is an
-#' alignment-free method that represents genomic sequences as frequency matrices,
-#' which can then be used for phylogenetic analysis and sequence comparison.
-#'
-#' @param k_mer Integer. The word length (k-mer size) for frequency calculation.
-#'   Typical values range from 4 to 8. Default is 6.
-#' @param seq_index Integer. The index of the sequence in the global
-#'   fasta_filtered object to process.
-#' @param len_trim Integer. The length to which sequences should be trimmed for
-#'   consistent comparison. Usually set to the minimum sequence length in the
-#'   dataset.
-#'
-#' @return A matrix containing the frequencies of all possible k-mers for the
-#'   given sequence. The matrix has 4^k rows corresponding to all possible
-#'   k-mers.
-#'
-#' @details
-#' The function creates a frequency matrix based on the CGR algorithm. Each
-#' k-mer's frequency is calculated from the DNA sequence, and the resulting
-#' matrix can be used to compute distances between sequences without requiring
-#' sequence alignment.
-#'
-#' The CGR method is particularly efficient for large datasets as the
-#' computational cost of adding a new sequence is just one frequency matrix
-#' calculation, unlike multiple sequence alignment where the cost increases
-#' quadratically.
-#'
-#' @examples
-#' # Create simple test sequences
-#' test_sequences <- list(
-#'     seq1 = "ATCGATCGATCGATCG",
-#'     seq2 = "GCTAGCTAGCTAGCTA"
-#' )
-#'
-#' # Set up global variable (required by cgat)
-#' assign("fasta_filtered", test_sequences, envir = .GlobalEnv)
-#'
-#' # Calculate CGR frequency matrix for first sequence
-#' freq_matrix <- cgat(k_mer = 3, seq_index = 1, len_trim = 16)
-#'
-#' # View dimensions (should be 4^3 = 64 possible 3-mers)
-#' dim(freq_matrix)
-#'
-#' # Check that frequencies sum to 1 (normalized)
-#' sum(freq_matrix)
-#'
-#' # Clean up
-#' rm(fasta_filtered, envir = .GlobalEnv)
-#'
-#' @references
-#' Thind AS, Sinha S (2023). Using Chaos-Game-Representation for Analysing the
-#' SARS-CoV-2 Lineages, Newly Emerging Strains and Recombinants. Current
-#' Genomics, 24(3). doi:10.2174/1389202924666230517115655
-#'
-#' @export
-cgat <- function(k_mer, seq_index, len_trim) {
-  sequence <- fasta_filtered[[seq_index]]
-  sequence <- substr(sequence, 1, len_trim)
-  sequence <- toupper(sequence)
-  sequence <- gsub("[^ACGT]", "", sequence)
-  n_kmers <- 4^k_mer
-  bases <- c("A", "C", "G", "T")
-  all_kmers <- apply(expand.grid(rep(list(bases), k_mer)), 1, paste, collapse = "")
-  freq_matrix <- matrix(0, nrow = n_kmers, ncol = 1)
-  rownames(freq_matrix) <- all_kmers
-  seq_length <- nchar(sequence)
-  if (seq_length >= k_mer) {
-    for (i in seq_len(seq_length - k_mer + 1)) {
-      kmer <- substr(sequence, i, i + k_mer - 1)
-      if (kmer %in% all_kmers) {
-        freq_matrix[kmer, 1] <- freq_matrix[kmer, 1] + 1
-      }
-    }
-    total_kmers <- sum(freq_matrix)
-    if (total_kmers > 0) freq_matrix <- freq_matrix / total_kmers
-  }
-  return(freq_matrix)
-}
-
 
 # Internal version used by parallelCGR — takes sequences directly to avoid
 # writing to the global environment.
@@ -162,15 +79,17 @@ matrixDistance <- function(matrix1, matrix2, distance_type = "Euclidean") {
 }
 
 
-#' Filter FASTA sequences by N content
+#' Filter sequences by N content
 #'
-#' Filters a FASTA file by removing sequences with too many ambiguous (N) bases.
+#' Filters a list of DNA sequences by removing those with too many ambiguous
+#' (N) bases.
 #'
-#' @param fastafile List. A list of DNA sequences read by seqinr::read.fasta()
+#' @param fastafile List. A named list of DNA sequences (e.g. from
+#'   \code{seqinr::read.fasta()}).
 #' @param N_filter Integer. Maximum number of N bases allowed in a sequence.
 #'   Sequences with more N's than this threshold will be removed.
 #'
-#' @return List. Filtered FASTA sequences.
+#' @return List. Filtered list of sequences.
 #'
 #' @details
 #' This function is useful for quality control before phylogenetic analysis.
@@ -178,19 +97,16 @@ matrixDistance <- function(matrix1, matrix2, distance_type = "Euclidean") {
 #' calculations and tree construction.
 #'
 #' @examples
-#' # Create test sequences with N bases
 #' test_seqs <- list(
 #'     good_seq = "ATCGATCG",
-#'     bad_seq = "ATCGNNNNNATCG",
+#'     bad_seq  = "ATCGNNNNNATCG",
 #'     okay_seq = "ATCGNNATCG"
 #' )
-#'
-#' # Filter sequences with more than 3 N's
-#' filtered <- fastafile_new(test_seqs, N_filter = 3)
+#' filtered <- filter_N(test_seqs, N_filter = 3)
 #' length(filtered)  # Should be 2
 #'
 #' @export
-fastafile_new <- function(fastafile, N_filter) {
+filter_N <- function(fastafile, N_filter) {
   n_counts <- vapply(fastafile, function(seq) {
     length(grep("N", strsplit(toupper(seq), "")[[1]]))
   }, FUN.VALUE = integer(1))
@@ -201,7 +117,6 @@ fastafile_new <- function(fastafile, N_filter) {
   )
   return(filtered)
 }
-
 
 #' Create metadata table for sequences
 #'

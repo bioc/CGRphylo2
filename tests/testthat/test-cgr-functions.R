@@ -2,6 +2,7 @@
 
 library(testthat)
 library(CGRphylo2)
+library(BiocParallel)
 
 # Test data
 test_sequences <- list(
@@ -10,22 +11,21 @@ test_sequences <- list(
   seq3 = "AAAATTTTCCCCGGGG"
 )
 
-test_that("fastafile_new filters sequences correctly", {
-  # Create test data with N's
+test_that("filter_N filters sequences correctly", {
   test_seqs_with_n <- list(
     good_seq = "ATCGATCG",
-    bad_seq = "ATCGNNNNNATCG", # 5 N's
-    okay_seq = "ATCGNNATCG" # 2 N's
+    bad_seq  = "ATCGNNNNNATCG", # 5 N's
+    okay_seq = "ATCGNNATCG"     # 2 N's
   )
 
-  # Filter with threshold of 3 N's
-  filtered <- fastafile_new(test_seqs_with_n, N_filter = 3)
+  filtered <- filter_N(test_seqs_with_n, N_filter = 3)
 
   expect_equal(length(filtered), 2)
   expect_true("good_seq" %in% names(filtered))
   expect_true("okay_seq" %in% names(filtered))
   expect_false("bad_seq" %in% names(filtered))
 })
+
 
 test_that("create_meta generates correct metadata", {
   meta <- create_meta(test_sequences, N_filter = 0)
@@ -42,24 +42,15 @@ test_that("create_meta generates correct metadata", {
   expect_equal(meta$GC_content[3], 50)
 })
 
-test_that("cgat generates frequency matrix with correct dimensions", {
-  # Set up global variable
-  assign("fasta_filtered", test_sequences, envir = .GlobalEnv)
+test_that("parallelCGR generates frequency matrices with correct dimensions", {
+  freq_mats <- parallelCGR(test_sequences, k_mer = 3, len_trim = 12,
+                            BPPARAM = BiocParallel::SerialParam())
 
-  k_mer <- 3
-  len_trim <- 12
-
-  freq_matrix <- cgat(k_mer = k_mer, seq_index = 1, len_trim = len_trim)
-
-  # Check dimensions (4^3 = 64 possible 3-mers)
-  expect_equal(nrow(freq_matrix), 4^k_mer)
-  expect_equal(ncol(freq_matrix), 1)
-
-  # Check that frequencies sum to 1 (normalized)
-  expect_equal(sum(freq_matrix), 1, tolerance = 1e-6)
-
-  # All frequencies should be non-negative
-  expect_true(all(freq_matrix >= 0))
+  expect_equal(length(freq_mats), length(test_sequences))
+  expect_equal(nrow(freq_mats[[1]]), 4^3)
+  expect_equal(ncol(freq_mats[[1]]), 1)
+  expect_equal(sum(freq_mats[[1]]), 1, tolerance = 1e-6)
+  expect_true(all(freq_mats[[1]] >= 0))
 })
 
 test_that("matrixDistance calculates distances correctly", {
@@ -98,30 +89,17 @@ test_that("cgrplot generates coordinates correctly", {
 })
 
 test_that("calculateDistanceMatrix produces symmetric matrix", {
-  assign("fasta_filtered", test_sequences, envir = .GlobalEnv)
-
-  # Create frequency matrices
-  freq_matrices <- list(
-    seq1 = cgat(3, 1, 12),
-    seq2 = cgat(3, 2, 12),
-    seq3 = cgat(3, 3, 16)
-  )
+  freq_matrices <- parallelCGR(test_sequences, k_mer = 3, len_trim = 12,
+                                BPPARAM = BiocParallel::SerialParam())
 
   dist_matrix <- calculateDistanceMatrix(freq_matrices,
     distance_type = "Euclidean"
   )
 
-  # Check dimensions
   expect_equal(nrow(dist_matrix), 3)
   expect_equal(ncol(dist_matrix), 3)
-
-  # Check symmetry
   expect_equal(dist_matrix, t(dist_matrix))
-
-  # Diagonal should be zero
   expect_equal(as.numeric(diag(dist_matrix)), c(0, 0, 0))
-
-  # All values should be non-negative
   expect_true(all(dist_matrix >= 0))
 })
 
@@ -179,19 +157,16 @@ test_that("Invalid distance types throw errors", {
   expect_error(matrixDistance(mat1, mat2, distance_type = "InvalidType"))
 })
 
-test_that("parallelCGR works correctly", {
-  skip_on_cran() # Skip on CRAN as parallel processing can be unstable
-
+test_that("parallelCGR works with SerialParam", {
   freq_matrices <- parallelCGR(test_sequences,
-    k_mer = 3,
+    k_mer   = 3,
     len_trim = 12,
-    num_cores = 1
+    BPPARAM = BiocParallel::SerialParam()
   )
 
   expect_equal(length(freq_matrices), 3)
   expect_equal(names(freq_matrices), names(test_sequences))
 
-  # Each frequency matrix should have correct dimensions
   lapply(freq_matrices, function(mat) {
     expect_equal(nrow(mat), 4^3)
   })

@@ -159,7 +159,7 @@ savePhylipDistance <- function(filename, distance_matrix, mode = "relaxed") {
 #' matrices.
 #'
 #' @param freq_matrices List. A named list of frequency matrices, one per
-#'   sequence, as returned by cgat().
+#'   sequence, as returned by parallelCGR().
 #' @param distance_type Character. Type of distance to calculate:
 #'   "Euclidean" (default), "S_Euclidean", or "Manhattan".
 #'
@@ -214,69 +214,58 @@ calculateDistanceMatrix <- function(freq_matrices,
 #' Parallel computation of CGR frequency matrices
 #'
 #' Efficiently calculates CGR frequency matrices for multiple sequences using
-#' parallel processing.
+#' BiocParallel for cross-platform parallel processing.
 #'
-#' @param sequences List. A list of DNA sequences (from fastafile_new or
-#'   similar).
+#' @param sequences List. A named list of DNA sequences (from \code{filter_N}
+#'   or similar).
 #' @param k_mer Integer. The k-mer size for frequency calculation.
 #' @param len_trim Integer. Length to trim all sequences to.
-#' @param num_cores Integer. Number of CPU cores to use. If NULL, uses
-#'   detectCores() - 1. Always set to 1 inside vignettes and examples.
+#' @param BPPARAM A \code{\link[BiocParallel]{BiocParallelParam}} object
+#'   controlling parallel execution.  Defaults to
+#'   \code{BiocParallel::bpparam()}, which uses the registered back-end
+#'   (serial on Windows by default, multicore on Unix/macOS).
+#'   Pass \code{BiocParallel::SerialParam()} to force single-core execution
+#'   (required inside vignette chunks and unit tests).
 #'
 #' @return Named list. A list of frequency matrices, one per sequence.
 #'
 #' @details
-#' This function uses parallel processing to speed up the calculation of CGR
-#' frequency matrices for large datasets. It automatically detects available
-#' cores and leaves one free to prevent system freezing.
+#' This function uses \code{BiocParallel::bplapply} to dispatch computation
+#' across available cores. The \code{BPPARAM} argument lets callers choose the
+#' back-end: \code{MulticoreParam} on Linux/macOS, \code{SnowParam} on Windows,
+#' or \code{SerialParam} for sequential execution.
 #'
-#' Note: On Windows, parallel processing falls back to sequential processing.
-#' Always pass num_cores = 1 when calling from vignettes or examples to comply
-#' with CRAN/Bioconductor check policies.
+#' @importFrom BiocParallel bplapply bpparam SerialParam
 #'
 #' @examples
-#' # Small synthetic sequences — num_cores = 1 required in checked examples
 #' seqs <- list(
 #'     Seq1 = "ATCGATCGATCGATCGATCG",
 #'     Seq2 = "GCTAGCTAGCTAGCTAGCTA"
 #' )
-#' assign("fasta_filtered", seqs, envir = .GlobalEnv)
-#'
-#' freq_mats <- parallelCGR(seqs, k_mer = 2, len_trim = 20, num_cores = 1)
+#' freq_mats <- parallelCGR(seqs, k_mer = 2, len_trim = 20,
+#'                          BPPARAM = BiocParallel::SerialParam())
 #' cat("Matrices computed:", length(freq_mats), "\n")
 #'
-#' rm(fasta_filtered, envir = .GlobalEnv)
-#'
 #' @export
-parallelCGR <- function(sequences, k_mer, len_trim, num_cores = NULL) {
-  # Determine number of cores
-  if (is.null(num_cores)) {
-    num_cores <- parallel::detectCores() - 1
-    num_cores <- max(1, num_cores)
-  }
-  
-  seq_names <- names(sequences)
-  n_seq <- length(sequences)
+parallelCGR <- function(sequences, k_mer, len_trim,
+                        BPPARAM = BiocParallel::bpparam()) {
 
-  process_sequence <- function(n) {
-    cgat_local(k_mer, n, len_trim, sequences)
-  }
+    seq_names <- names(sequences)
+    n_seq     <- length(sequences)
 
-  message("Processing ", n_seq, " sequences using ", num_cores, " cores...")
+    process_sequence <- function(n) {
+        cgat_local(k_mer, n, len_trim, sequences)
+    }
 
-  # Use parallel processing on Unix-like systems, sequential on Windows
-  if (.Platform$OS.type == "unix") {
-    freq_matrices <- parallel::mclapply(
-      seq_len(n_seq),
-      process_sequence,
-      mc.cores = num_cores
+    message("Processing ", n_seq, " sequences...")
+
+    freq_matrices <- BiocParallel::bplapply(
+        seq_len(n_seq),
+        process_sequence,
+        BPPARAM = BPPARAM
     )
-  } else {
-    message("Windows detected: using sequential processing")
-    freq_matrices <- lapply(seq_len(n_seq), process_sequence)
-  }
-  
-  names(freq_matrices) <- seq_names
-  message("Processing complete!")
-  return(freq_matrices)
+
+    names(freq_matrices) <- seq_names
+    message("Processing complete!")
+    return(freq_matrices)
 }

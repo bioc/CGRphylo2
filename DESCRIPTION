@@ -7,7 +7,7 @@ Authors@R: person("Amarinder Singh", "Thind",
                   email = "thind.amarinder@gmail.com",
                   role = c("aut", "cre"),
                   comment = c(ORCID = "0000-0003-4592-0380"))
-Description: Description: CGRphylo2 provides an alignment-free phylogenetic analysis method
+Description: CGRphylo2 provides an alignment-free phylogenetic analysis method
     for viral genomes using Chaos Game Representation (CGR), a technique based
     on statistical physics concepts. Viruses exhibit high mutation rates,
     facilitating rapid evolution and emergence of new species, subspecies,
@@ -32,7 +32,7 @@ LazyData: false
 Depends:
     R (>= 4.5.0)
 Imports:
-    parallel,
+    BiocParallel,
     Biostrings
 Suggests:
     BiocStyle,
@@ -51,5 +51,5 @@ biocViews: Phylogenetics, Genetics, SequenceMatching, Alignment,
     MultipleComparison, Classification
 BugReports: https://github.com/amarinderthind/CGRphylo2/issues
 URL: https://github.com/amarinderthind/CGRphylo2
-RoxygenNote: 7.3.3
 Config/testthat/edition: 3
+Config/roxygen2/version: 8.0.0

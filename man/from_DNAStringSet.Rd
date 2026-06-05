@@ -15,7 +15,7 @@ A named list of character strings, one element per sequence.
 \description{
 Converts a \code{\link[Biostrings]{DNAStringSet}} object to a named list of
 character strings suitable for use with CGRphylo2 functions such as
-\code{fastafile_new}, \code{create_meta}, and \code{parallelCGR}.
+\code{filter_N}, \code{create_meta}, and \code{parallelCGR}.
 }
 \details{
 Bioconductor workflows commonly store DNA sequences as

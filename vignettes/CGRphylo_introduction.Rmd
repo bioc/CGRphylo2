@@ -98,9 +98,8 @@ devtools::install_github("amarinderthind/CGRphylo2")
 
 # Quick Start Example
 
-This example demonstrates the complete CGRphylo2 workflow using six synthetic
-DNA sequences (three AT-rich, three GC-rich) so that all steps run and
-produce visible output when the vignette is built.
+This example demonstrates the complete CGRphylo2 workflow using the SARS-CoV-2
+sequences bundled with the package in `inst/extdata`.
 
 ## Load Required Packages
 
@@ -111,54 +110,27 @@ library(ape)
 
 ## Prepare Example Sequences
 
-We create six 200 bp synthetic sequences in two compositional groups. This
-avoids any dependency on external files during the build. 
+We load the SARS-CoV-2 sequences bundled with the package and filter out any
+with excessive ambiguous (N) bases.
 
 ```{r load_data}
+library(seqinr)
+fasta_path <- system.file("extdata", "example_sequences.fasta",
+                           package = "CGRphylo2")
+fastafile  <- seqinr::read.fasta(fasta_path, seqtype = "DNA",
+                                  as.string = TRUE, set.attributes = FALSE)
+N_filter       <- 50
+fasta_filtered <- filter_N(fastafile, N_filter)
 
-## ── To use your own FASTA file, uncomment the block below ────────────────────
-##
-# library(seqinr)
-# fastafile <- seqinr::read.fasta(
-#     system.file("extdata", "example_sequences.fasta", package = "CGRphylo2"),
-#     seqtype = "DNA", as.string = TRUE, set.attributes = FALSE
-# )
-# N_filter       <- 50
-# fasta_filtered <- fastafile_new(fastafile, N_filter)
-
-## ────────────────────────────────────────────────────────────────────────────
-
-
-
-## Synthetic sequences used for vignette build (no external file required).
-## Delete this block if you uncomment the FASTA loader above.
-
-set.seed(42)
-make_seq <- function(n, prob) {
-    paste(sample(c("A", "T", "C", "G"), n,
-        replace = TRUE, prob = prob
-    ), collapse = "")
-}
-
-## Group A: AT-rich  |  Group B: GC-rich
-fasta_filtered <- list(
-    A1 = make_seq(5000, c(0.35, 0.35, 0.15, 0.15)),
-    A2 = make_seq(5000, c(0.33, 0.37, 0.15, 0.15)),
-    A3 = make_seq(5000, c(0.36, 0.34, 0.14, 0.16)),
-    B1 = make_seq(5000, c(0.15, 0.15, 0.35, 0.35)),
-    B2 = make_seq(5000, c(0.14, 0.16, 0.33, 0.37)),
-    B3 = make_seq(5000, c(0.15, 0.15, 0.36, 0.34))
-)
-
-## Show first 60 characters of each sequence
+cat("Sequences retained:", length(fasta_filtered), "\n")
 for (nm in names(fasta_filtered)) {
-    cat(nm, ":", substr(fasta_filtered[[nm]], 1, 60), "...\n")
+    cat(nm, ": length =", nchar(fasta_filtered[[nm]]), "bp\n")
 }
 ```
 
 ## Sequence Quality Control
 
-```{r metadata, fig.cap="Sequence lengths (left) and GC content (right) for the six example sequences. Group A is AT-rich (~30 percent GC) and Group B is GC-rich (~70 percent GC)."}
+```{r metadata, fig.cap="Sequence lengths (left) and GC content (right) for the bundled SARS-CoV-2 sequences."}
 meta <- create_meta(fasta_filtered, N_filter = 50)
 print(meta)
 
@@ -180,18 +152,19 @@ par(mfrow = c(1, 1))
 ## Calculate CGR Frequency Matrices
 
 The k-mer size determines the resolution of the analysis. Typical values for
-real genome data are 4-8; we use k=3 here so the vignette builds quickly.
+real genome data are 4-8; we use k=4 here.
 
 ```{r calculate_frequencies}
- 
+library(BiocParallel)
+
 k_mer    <- 4   ## use 6 for real genome-scale data (virus) ~30k bp
 len_trim <- min(nchar(unlist(fasta_filtered)))
 
-## num_cores=1 required in vignettes — R CMD check forbids >2 parallel processes
+## SerialParam() required in vignettes — R CMD check forbids >2 parallel processes
 freq_matrices <- parallelCGR(fasta_filtered,
-    k_mer      = k_mer,
-    len_trim   = len_trim,
-    num_cores  = 1
+    k_mer    = k_mer,
+    len_trim = len_trim,
+    BPPARAM  = SerialParam()
 )
 
 cat("Sequences processed:", length(freq_matrices), "\n")
@@ -201,20 +174,19 @@ cat("K-mers per matrix  :", nrow(freq_matrices[[1]]),
 
 ## CGR Visualization
 
-```{r cgr_plots, fig.cap="CGR plots for an AT-rich sequence (A1, blue) and a GC-rich sequence (B1, red). The two groups show clearly different density patterns."}
- 
+```{r cgr_plots, fig.cap="CGR plots for the first two sequences, showing the k-mer density patterns characteristic of each genome."}
 par(mfrow = c(1, 2), mar = c(2, 2, 3, 1))
 
 cgr1 <- cgrplot(1)
 plot(cgr1[, 1], cgr1[, 2],
     main = paste("CGR:", names(fasta_filtered)[1]),
-    xlab = "", ylab = "", cex = 0.4, pch = 4, col = "blue"
+    xlab = "", ylab = "", cex = 0.4, pch = 4, col = "steelblue"
 )
 
-cgr2 <- cgrplot(4)
+cgr2 <- cgrplot(2)
 plot(cgr2[, 1], cgr2[, 2],
-    main = paste("CGR:", names(fasta_filtered)[4]),
-    xlab = "", ylab = "", cex = 0.4, pch = 4, col = "red"
+    main = paste("CGR:", names(fasta_filtered)[2]),
+    xlab = "", ylab = "", cex = 0.4, pch = 4, col = "tomato"
 )
 par(mfrow = c(1, 1))
 ```
@@ -231,7 +203,7 @@ print(round(distance_matrix, 4))
 
 ## Distance Matrix Heatmap
 
-```{r heatmap, fig.cap="Pairwise Euclidean distance matrix. Lighter colours indicate smaller distances (more similar sequences). Group A and Group B sequences cluster within their own groups."}
+```{r heatmap, fig.cap="Pairwise Euclidean distance matrix. Lighter colours indicate smaller distances (more similar sequences)."}
 col_pal <- colorRampPalette(c("white", "steelblue", "darkblue"))(50)
 n       <- nrow(distance_matrix)
 
@@ -253,19 +225,12 @@ for (i in seq_len(n)) {
 
 ## Build Phylogenetic Tree
 
-```{r build_tree, fig.cap="Neighbour-joining tree built from CGR Euclidean distances. Blue tips = AT-rich (Group A), red tips = GC-rich (Group B)."}
- 
-nj_tree    <- nj(as.dist(distance_matrix))
-tip_colors <- ifelse(grepl("^A", nj_tree$tip.label), "blue", "red")
+```{r build_tree, fig.cap="Neighbour-joining tree built from CGR Euclidean distances for the bundled SARS-CoV-2 sequences."}
+nj_tree <- nj(as.dist(distance_matrix))
 
 plot(nj_tree,
-    tip.color = tip_colors,
-    main      = "Neighbour-Joining Tree (CGR distances)",
-    cex       = 1.1
-)
-legend("bottomleft",
-    legend = c("Group A (AT-rich)", "Group B (GC-rich)"),
-    col    = c("blue", "red"), pch = 19, bty = "n"
+    main = "Neighbour-Joining Tree (CGR distances)",
+    cex  = 0.9
 )
 ```
 
@@ -316,7 +281,7 @@ fastafile <- seqinr::read.fasta("my_sequences.fasta",
     set.attributes = FALSE
 )
 N_filter       <- 50
-fasta_filtered <- fastafile_new(fastafile, N_filter)
+fasta_filtered <- filter_N(fastafile, N_filter)
 meta           <- create_meta(fasta_filtered, N_filter)
 len_trim       <- min(meta$length)
 ```
@@ -325,29 +290,33 @@ len_trim       <- min(meta$length)
 
 CGRphylo2 supports three distance metrics:
 
-```{r distance_methods, fig.cap="NJ trees using three distance metrics. All three correctly separate the two sequence groups."}
+```{r distance_methods, fig.cap="NJ trees using three distance metrics."}
+## Recompute frequency matrices for this section
+freq_matrices <- parallelCGR(fasta_filtered,
+    k_mer    = k_mer,
+    len_trim = len_trim,
+    BPPARAM  = SerialParam()
+)
+
 par(mfrow = c(1, 3), mar = c(1, 1, 3, 1))
 for (dtype in c("Euclidean", "Manhattan", "S_Euclidean")) {
-    dist_d   <- calculateDistanceMatrix(freq_matrices, distance_type = dtype)
-    tree_d   <- nj(as.dist(dist_d))
-    tip_cols <- ifelse(grepl("^A", tree_d$tip.label), "blue", "red")
-    plot(tree_d, tip.color = tip_cols, main = dtype, cex = 0.95)
+    dist_d <- calculateDistanceMatrix(freq_matrices, distance_type = dtype)
+    tree_d <- nj(as.dist(dist_d))
+    plot(tree_d, main = dtype, cex = 0.8)
 }
 par(mfrow = c(1, 1))
 ```
 
 ## 4. Choosing K-mer Size
 
-```{r kmer_comparison, fig.cap="NJ trees at k = 2, 3, and 4. All k values correctly separate the two groups."}
+```{r kmer_comparison, fig.cap="NJ trees at k = 2, 3, and 4."}
 par(mfrow = c(1, 3), mar = c(1, 1, 3, 1))
 for (k in c(2, 3, 4)) {
-    freq_k   <- parallelCGR(fasta_filtered, k_mer = k, len_trim = len_trim,
-                            num_cores = 1)   ## num_cores=1 required in vignettes
-    dist_k   <- calculateDistanceMatrix(freq_k, distance_type = "Euclidean")
-    tree_k   <- nj(as.dist(dist_k))
-    tip_cols <- ifelse(grepl("^A", tree_k$tip.label), "blue", "red")
-    plot(tree_k, tip.color = tip_cols,
-        main = paste0("k = ", k), cex = 0.95)
+    freq_k <- parallelCGR(fasta_filtered, k_mer = k, len_trim = len_trim,
+                          BPPARAM = SerialParam())
+    dist_k <- calculateDistanceMatrix(freq_k, distance_type = "Euclidean")
+    tree_k <- nj(as.dist(dist_k))
+    plot(tree_k, main = paste0("k = ", k), cex = 0.8)
 }
 par(mfrow = c(1, 1))
 ```
@@ -356,16 +325,14 @@ par(mfrow = c(1, 1))
 
 ```{r parallel_processing, eval=TRUE}
 freq_matrices <- parallelCGR(fasta_filtered,
-    k_mer     = 6,
-    len_trim  = len_trim,
-    num_cores = 1   ## uses detectCores() - 1
+    k_mer    = 6,
+    len_trim = len_trim,
+    BPPARAM  = SerialParam()
 )
-
-dim(freq_matrices[1])
-
+cat("Matrices computed:", length(freq_matrices), "\n")
 ```
 
-## 5. Memory Optimisation for Very Large Datasets
+## 6. Memory Optimisation for Very Large Datasets
 
 ```{r memory_optimization, eval=FALSE}
 batch_size        <- 100
@@ -377,7 +344,8 @@ for (i in seq_len(n_batches)) {
     start_idx         <- (i - 1) * batch_size + 1
     end_idx           <- min(i * batch_size, n_sequences)
     batch_seqs        <- fasta_filtered[start_idx:end_idx]
-    batch_freq        <- parallelCGR(batch_seqs, k_mer = 6, len_trim = len_trim)
+    batch_freq        <- parallelCGR(batch_seqs, k_mer = 6, len_trim = len_trim,
+                                     BPPARAM = BiocParallel::bpparam())
     all_freq_matrices <- c(all_freq_matrices, batch_freq)
 }
 ```

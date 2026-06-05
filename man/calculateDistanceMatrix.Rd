@@ -8,7 +8,7 @@ calculateDistanceMatrix(freq_matrices, distance_type = "Euclidean")
 }
 \arguments{
 \item{freq_matrices}{List. A named list of frequency matrices, one per
-sequence, as returned by cgat().}
+sequence, as returned by parallelCGR().}
 
 \item{distance_type}{Character. Type of distance to calculate:
 "Euclidean" (default), "S_Euclidean", or "Manhattan".}

@@ -2,7 +2,7 @@
 #'
 #' Converts a \code{\link[Biostrings]{DNAStringSet}} object to a named list of
 #' character strings suitable for use with CGRphylo2 functions such as
-#' \code{fastafile_new}, \code{create_meta}, and \code{parallelCGR}.
+#' \code{filter_N}, \code{create_meta}, and \code{parallelCGR}.
 #'
 #' @param dna A \code{DNAStringSet} object containing one or more DNA sequences.
 #'

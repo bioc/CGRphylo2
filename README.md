@@ -1,6 +1,6 @@
 # CGRphylo2: Chaos Game Representation for Phylogenetic Analysis
 
-[![Bioconductor](https://img.shields.io/badge/Bioconductor-0.99.0-brightgreen.svg)](http://bioconductor.org/packages/CGRphylo2/)
+[![Bioconductor](https://img.shields.io/badge/Bioconductor-0.99.1-brightgreen.svg)](http://bioconductor.org/packages/CGRphylo2/)
 [![License](https://img.shields.io/badge/license-GPL--3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0.en.html)
 
 ## Overview
@@ -77,12 +77,13 @@ fastafile <- seqinr::read.fasta("sequences.fasta",
                                 as.string = TRUE)
 
 # Filter sequences
-fasta_filtered <- fastafile_new(fastafile, N_filter = 50)
+fasta_filtered <- filter_N(fastafile, N_filter = 50)
 
 # Calculate CGR frequency matrices (parallel)
 freq_matrices <- parallelCGR(fasta_filtered, 
                              k_mer = 6, 
-                             len_trim = min(sapply(fasta_filtered, nchar)))
+                             len_trim = min(sapply(fasta_filtered, nchar)),
+                             BPPARAM = BiocParallel::bpparam())
 
 # Calculate distance matrix
 distance_matrix <- calculateDistanceMatrix(freq_matrices)

@@ -4,46 +4,43 @@
 \alias{parallelCGR}
 \title{Parallel computation of CGR frequency matrices}
 \usage{
-parallelCGR(sequences, k_mer, len_trim, num_cores = NULL)
+parallelCGR(sequences, k_mer, len_trim, BPPARAM = BiocParallel::bpparam())
 }
 \arguments{
-\item{sequences}{List. A list of DNA sequences (from fastafile_new or
-similar).}
+\item{sequences}{List. A named list of DNA sequences (from \code{filter_N}
+or similar).}
 
 \item{k_mer}{Integer. The k-mer size for frequency calculation.}
 
 \item{len_trim}{Integer. Length to trim all sequences to.}
 
-\item{num_cores}{Integer. Number of CPU cores to use. If NULL, uses
-detectCores() - 1. Always set to 1 inside vignettes and examples.}
+\item{BPPARAM}{A \code{\link[BiocParallel]{BiocParallelParam}} object
+controlling parallel execution.  Defaults to
+\code{BiocParallel::bpparam()}, which uses the registered back-end
+(serial on Windows by default, multicore on Unix/macOS).
+Pass \code{BiocParallel::SerialParam()} to force single-core execution
+(required inside vignette chunks and unit tests).}
 }
 \value{
 Named list. A list of frequency matrices, one per sequence.
 }
 \description{
 Efficiently calculates CGR frequency matrices for multiple sequences using
-parallel processing.
+BiocParallel for cross-platform parallel processing.
 }
 \details{
-This function uses parallel processing to speed up the calculation of CGR
-frequency matrices for large datasets. It automatically detects available
-cores and leaves one free to prevent system freezing.
-
-Note: On Windows, parallel processing falls back to sequential processing.
-Always pass num_cores = 1 when calling from vignettes or examples to comply
-with CRAN/Bioconductor check policies.
+This function uses \code{BiocParallel::bplapply} to dispatch computation
+across available cores. The \code{BPPARAM} argument lets callers choose the
+back-end: \code{MulticoreParam} on Linux/macOS, \code{SnowParam} on Windows,
+or \code{SerialParam} for sequential execution.
 }
 \examples{
-# Small synthetic sequences — num_cores = 1 required in checked examples
 seqs <- list(
     Seq1 = "ATCGATCGATCGATCGATCG",
     Seq2 = "GCTAGCTAGCTAGCTAGCTA"
 )
-assign("fasta_filtered", seqs, envir = .GlobalEnv)
-
-freq_mats <- parallelCGR(seqs, k_mer = 2, len_trim = 20, num_cores = 1)
+freq_mats <- parallelCGR(seqs, k_mer = 2, len_trim = 20,
+                         BPPARAM = BiocParallel::SerialParam())
 cat("Matrices computed:", length(freq_mats), "\n")
-
-rm(fasta_filtered, envir = .GlobalEnv)
 
 }

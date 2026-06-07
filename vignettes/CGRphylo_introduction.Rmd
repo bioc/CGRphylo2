@@ -271,19 +271,19 @@ cat("Sequences loaded:", length(seqs), "\n")
 
 ## 2. Data Preparation
 
-For real data, replace the inline sequences above with:
+We load the same bundled SARS-CoV-2 sequences used in the Quick Start:
 
-```{r real_data_loading, eval=FALSE}
+```{r detailed_load_data}
 library(seqinr)
-fastafile <- seqinr::read.fasta("my_sequences.fasta",
-    seqtype        = "DNA",
-    as.string      = TRUE,
-    set.attributes = FALSE
-)
+fasta_path     <- system.file("extdata", "example_sequences.fasta",
+                               package = "CGRphylo2")
+fastafile      <- seqinr::read.fasta(fasta_path, seqtype = "DNA",
+                                      as.string = TRUE, set.attributes = FALSE)
 N_filter       <- 50
 fasta_filtered <- filter_N(fastafile, N_filter)
 meta           <- create_meta(fasta_filtered, N_filter)
 len_trim       <- min(meta$length)
+k_mer          <- 6
 ```
 
 ## 3. Distance Calculation Methods

@@ -1,13 +1,16 @@
 Changes in version 0.99.1 (2026-02-13)
 ---------------------------------------
 
+* Added BiocParallel support: parallelCGR() now accepts a BPPARAM argument
+  (default BiocParallel::bpparam()) replacing the num_cores integer parameter.
+* Removed cgat(); all internal calls now use cgat_local() which avoids
+  global-environment dependency.
+* Renamed fastafile_new() to filter_N() for clarity.
+* Removed .RData, .Rhistory, and INSTALL artefacts from the repository.
+
+Changes in version 0.99.0 (2025-11-01)
+---------------------------------------
+
 * Initial Bioconductor submission.
 * Added parallelCGR(), calculateDistanceMatrix(), saveMegaDistance(),
   savePhylipDistance(), cgrplot(), and from_DNAStringSet().
-* Added BiocParallel integration: parallelCGR() now accepts a BPPARAM
-  argument (default BiocParallel::bpparam()) replacing the num_cores integer.
-* Removed cgat(); all internal calls now use cgat_local() which avoids
-  global-environment dependency.
-* Renamed fastafile_new() to filter_N(); old name retained as a deprecated
-  wrapper for backward compatibility.
-* Removed .RData, .Rhistory, and INSTALL artefacts from the repository.

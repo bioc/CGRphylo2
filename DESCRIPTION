@@ -2,13 +2,13 @@ Package: CGRphylo2
 Type: Package
 Title: Chaos Game Representation for Phylogenetic Analysis
 Version: 0.99.1
-Date: 2026-02-13
+Date: 2026-06-07
 Authors@R: person("Amarinder Singh", "Thind", 
                   email = "thind.amarinder@gmail.com",
                   role = c("aut", "cre"),
                   comment = c(ORCID = "0000-0003-4592-0380"))
-Description: CGRphylo2 provides an alignment-free phylogenetic analysis method
-    for viral genomes using Chaos Game Representation (CGR), a technique based
+Description: An alignment-free phylogenetic analysis method for viral genomes
+    using Chaos Game Representation (CGR), a technique based
     on statistical physics concepts. Viruses exhibit high mutation rates,
     facilitating rapid evolution and emergence of new species, subspecies,
     strains, and recombinant forms. Accurate classification is crucial for
@@ -25,7 +25,7 @@ Description: CGRphylo2 provides an alignment-free phylogenetic analysis method
     lengths. The package creates frequency matrices for distance calculations
     and phylogenetic tree construction, with outputs compatible with standard
     formats (MEGA, PHYLIP, Newick). Methods are based on Thind and Sinha (2023)
-    <doi:10.2174/1389202924666230517115655>.
+    <doi:10.2174/0113892029264990231013112156>.
 License: GPL-3
 Encoding: UTF-8
 LazyData: false

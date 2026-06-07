@@ -42,7 +42,7 @@ simultaneous comparison of numerous closely-related sequences of different
 lengths. The package creates frequency matrices for distance calculations
 and phylogenetic tree construction, with outputs compatible with standard
 formats (MEGA, PHYLIP, Newick). Earlier version reference is Thind and
-Sinha (2023) <doi:10.2174/1389202924666230517115655>.
+Sinha (2023) <doi:10.2174/0113892029264990231013112156>.
 
 ## Why CGRphylo?
 
@@ -73,7 +73,7 @@ If you use CGRphylo in your research, please cite:
 > Thind AS, Sinha S (2023). Using Chaos-Game-Representation for Analysing the
 > SARS-CoV-2 Lineages, Newly Emerging Strains and Recombinants.
 > *Current Genomics*, 24(3).
-> [doi:10.2174/1389202924666230517115655](https://doi.org/10.2174/1389202924666230517115655)
+> [doi:10.2174/0113892029264990231013112156](https://doi.org/10.2174/0113892029264990231013112156)
 
 # Installation
 

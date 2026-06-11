@@ -1,3 +1,9 @@
+Changes in version 0.99.2 (2026-06-12)
+---------------------------------------
+
+* Address Bioconductor reviewer comments: fix DOI formatting, update Date
+  field, reword Description for clarity, and fix NEWS versioning.
+
 Changes in version 0.99.1 (2026-02-13)
 ---------------------------------------
 
